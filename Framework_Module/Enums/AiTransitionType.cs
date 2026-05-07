@@ -6,10 +6,10 @@ namespace Framework_Module.Enums
 
     public enum AiTransitionType
     {
-        Time,
-        HealthPercentBelow,
-        PlayerInRange,
-        CycleComplete,
-        Custom,
+        Time=0,
+        HealthPercentBelow=1,
+        PlayerInRange=2,
+        CycleComplete=3,
+        PlayerRelativeLocation=4,
     }
 }

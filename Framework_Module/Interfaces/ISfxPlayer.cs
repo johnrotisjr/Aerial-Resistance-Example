@@ -7,7 +7,7 @@ namespace Framework_Module.Interfaces
     public interface ISfxPlayer
     {
         void Inject(GameObjectPooler gameObjectPoolerService, IConfigDatabase configDatabaseService);
-        void PlayOneShot(AudioSfxType type, float volume = 1f);
+        void PlayOneShot(AudioSfxType type);
         void StopAll();
     }
 }

@@ -31,9 +31,9 @@ namespace Framework_Module.Service
             serviceLifecycleManager.UntrackService<T>();
         }
         
-        public T Get<T>() where T : class, IGameService
+        public static T Get<T>() where T : class, IGameService
         {
-            return locator.Get<T>();
+            return Instance.locator.Get<T>();
         }
         
         public void InitializeServices()

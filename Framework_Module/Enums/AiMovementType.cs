@@ -8,15 +8,15 @@ namespace Framework_Module.Enums
     public enum AiMovementType
     {
         None,
-        Straight,
-        Retreat,
+        Linear,
         Wobble,
         Orbit,
         Stalker,
-        Hover,
         Kamikaze,
         MoveToPosition,
         Arching,
-        Maintain
+        Maintain,
+        Patrol,
+        Teleport
     }
 }

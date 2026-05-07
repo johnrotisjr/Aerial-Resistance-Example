@@ -14,9 +14,12 @@ namespace Framework_Module.Interfaces
         public bool HasCompletedPrimaryObjectives();
         public void Reset();
         public IVehicle SpawnPlayer();
-        public IWeapon SpawnWeapon(WeaponType weaponType, Vector2 position, Vector2 velocity, Quaternion rotation, AlignmentType alignment);
+        public IWeapon SpawnWeapon(WeaponType weaponType, Vector2 position, Vector2 velocity, Quaternion rotation, AlignmentType alignment, IVehicle parent);
         public List<IVehicleController> CheckEnemySpawn(float totalDistanceFlown);
         public IVehicleController CheckBossSpawn(float totalDistanceFlown);
         public List<IPickup> CheckPickupSpawn(float totalDistanceFlown);
+        public void Despawn<T>(string key, T value) where T : IWorldObject, IClearable;
+
+        public void Inject(IConfigDatabase database, IWorldObjectSpawner worldObjectSpawner);
     }
 }

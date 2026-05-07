@@ -9,7 +9,7 @@ namespace Framework_Module.Interfaces
         public void Move(Vector2 direction);
         public float Speed { get; }
         public void AddPower(float powerIncrease);
-        public WeaponDefinition? CurrentlyEquippedWeapon();
+        public WeaponDefinition CurrentlyEquippedWeapon();
         public void ProcessInput(DigitalInputActionType type, bool isPressed);
         public void ProcessInput(AxisInputActionType type, Vector2 inputValue);
     }

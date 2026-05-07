@@ -1,6 +1,8 @@
 using System;
+using System.Collections;
 using Debug_Module;
-using Framework_Module.Definitions;
+using Framework_Module.Core;
+using Framework_Module.GameData.Instructions;
 using Framework_Module.Interfaces;
 using Framework_Module.Service;
 using UnityEngine;
@@ -16,8 +18,11 @@ namespace Ai_Module
         private readonly SpawnMovementInstruction spawnMovementInstruction;
         private readonly IViewportBoundsProvider viewportBoundsProvider;
         private readonly IVehicleController controller;
-        private Vector2 enterVelocity;
         private readonly Action onComplete;
+        private Coroutine routine;
+        private bool isRunning = false;
+        
+        public bool IsRunning => isRunning;
         
         private const float MoveToPositionTolerance = .25f;
         
@@ -26,7 +31,7 @@ namespace Ai_Module
             if (onCompleteCallback == null)
             {
                 DebugLogger.Log("Callback is Null which is not allowed!", LogCategory.Ai, LogLevel.Error);
-                return;
+                throw new ArgumentNullException(nameof(onCompleteCallback));
             }
                 
             this.spawnMovementInstruction = spawnMovementInstruction;
@@ -34,69 +39,136 @@ namespace Ai_Module
             controller = vehicleController;
             onComplete = onCompleteCallback;
         }
-        
-        public void Update()
-        {
-            if (spawnMovementInstruction.IsUsingEndPosition)
-                MoveToPosition();
-            else
-                MoveIntoView();
-        }
 
-        private void MoveToPosition()
+        public void Begin()
         {
-            var direction = (spawnMovementInstruction.EndPosition - controller.ControlledVehicle.Position);
-            
-            if (direction.sqrMagnitude < MoveToPositionTolerance)
-            {
-                controller.ControlledVehicle.SetVelocity(Vector2.zero);
-                onComplete.Invoke();
-                return;
-            }
-            
-            controller.ControlledVehicle.SetVelocity(direction.normalized * controller.ControlledVehicle.Speed);
-        }
-
-        private void MoveIntoView()
-        {
+            Reset();
             if (controller.ControlledVehicle == null)
-                return;
-
-            if (enterVelocity == Vector2.zero)
-                enterVelocity = GetVelocity(controller.ControlledVehicle);
-
-            controller.ControlledVehicle.SetVelocity(enterVelocity);
-            if (IsInView(controller.ControlledVehicle))
             {
-                controller.ControlledVehicle.SetVelocity(Vector2.zero);
-                onComplete.Invoke();
+                DebugLogger.Log("No ControlledVehicle assigned.", LogCategory.Ai, LogLevel.Warning);
+                return;
             }
+            isRunning = true;
+            routine = spawnMovementInstruction.IsEnabled ? 
+                CoroutineRunner.Begin(MoveToPosition()) : 
+                CoroutineRunner.Begin(MoveIntoView());
         }
 
-        private bool IsInView(IVehicle controlledVehicle)
+        public void End()
         {
-            if (controlledVehicle == null)
-                return false;
+            Reset();
+        }
+
+        private void Reset()
+        {
+            if (routine != null)
+            {
+                CoroutineRunner.End(routine);
+                routine = null;
+            }
+            isRunning = false;
+        }
+
+        private IEnumerator MoveToPosition()
+        {
+            var vehicle = controller.ControlledVehicle;
+            if (vehicle == null)
+            {
+                isRunning = false;
+                yield break;
+            }
+            var bounds = viewportBoundsProvider.WorldViewBounds;
+
+            var actualPosX = bounds.min.x + spawnMovementInstruction.ViewportXPercent * bounds.size.x;
+            var actualPosY = bounds.min.y + spawnMovementInstruction.ViewportYPercent * bounds.size.y;
             
-            return viewportBoundsProvider.GetPixelAlignedViewport(-controlledVehicle.SpriteBounds.size/2).Contains(controlledVehicle.Position);
+            Vector3 target = new Vector2(actualPosX, actualPosY);
+            float toleranceSquared = MoveToPositionTolerance * MoveToPositionTolerance;
+
+            while (true)
+            {
+                vehicle = controller.ControlledVehicle;
+                if (vehicle == null)
+                {
+                    isRunning = false;
+                    yield break;
+                }
+
+                var delta = target - vehicle.Position;
+                if (delta.sqrMagnitude <= toleranceSquared)
+                    break;
+
+                var vel = delta.normalized * vehicle.Speed;
+                vehicle.SetVelocity(vel);
+                yield return null;
+            }
+            
+            vehicle.SetVelocity(Vector2.zero);
+            isRunning = false;
+            onComplete.Invoke();
         }
 
-        private Vector2 GetVelocity(IVehicle controlledVehicle)
+        private IEnumerator MoveIntoView()
         {
-            var view = viewportBoundsProvider.GetPixelAlignedViewport();
-            var pos = controlledVehicle.Position;
-            var bounds = controlledVehicle.SpriteBounds;
-            var halfSize = bounds.size * 0.5f;
+            var vehicle = controller.ControlledVehicle;
+            if (vehicle == null)
+            {
+                isRunning = false;
+                yield break;
+            }
 
-            // Clamp position to viewport bounds with buffer for sprite size
-            float clampedX = Mathf.Clamp(pos.x, view.xMin + halfSize.x, view.xMax - halfSize.x);
-            float clampedY = Mathf.Clamp(pos.y, view.yMin + halfSize.y, view.yMax - halfSize.y);
-            Vector2 clampedPoint = new Vector2(clampedX, clampedY);
+            Vector2 enterVelocity = GetEnterVelocity(vehicle);
+            vehicle.SetVelocity(enterVelocity);
 
-            // Calculate normalized direction toward clamped point
-            Vector2 direction = (clampedPoint - new Vector2(pos.x,pos.y)).normalized;
+            while (true)
+            {
+                vehicle = controller.ControlledVehicle;
+                if (vehicle == null)
+                {
+                    isRunning = false;
+                    yield break;
+                }
 
-            return direction * controlledVehicle.Speed;
+                if (IsInView(vehicle))
+                    break;
+
+                vehicle.SetVelocity(GetEnterVelocity(vehicle));
+                yield return null;
+            }
+
+            vehicle.SetVelocity(Vector2.zero);
+            isRunning = false;
+            onComplete.Invoke();
+        }
+        
+        private bool IsInView(IVehicle vehicle)
+        {
+            // Treat the vehicle as inside view when its sprite rect overlaps the viewport rect
+            Vector3 half = vehicle.SpriteBounds.size * 0.5f;
+            Rect viewport = viewportBoundsProvider.GetPixelAlignedViewport(-half);
+            
+            Rect spriteRect = new Rect(vehicle.Position, vehicle.SpriteBounds.size);
+            return viewport.Overlaps(spriteRect);
+        }
+
+        private Vector2 GetEnterVelocity(IVehicle vehicle)
+        {
+            Rect viewport = viewportBoundsProvider.GetPixelAlignedViewport();
+            Vector2 pos = vehicle.Position;
+
+            // Nearest clamped point inside the battlefield
+            float cx = Mathf.Clamp(pos.x, viewport.xMin, viewport.xMax);
+            float cy = Mathf.Clamp(pos.y, viewport.yMin, viewport.yMax);
+            Vector2 clamped = new Vector2(cx, cy);
+
+            Vector2 dir = (clamped - pos).normalized;
+            if (dir.sqrMagnitude <= float.Epsilon)
+            {
+                // Already inside or exactly on the edge, nudge inward along x
+                return vehicle.Velocity;
+            }
+
+            return dir * vehicle.Speed;
         }
     }
 }

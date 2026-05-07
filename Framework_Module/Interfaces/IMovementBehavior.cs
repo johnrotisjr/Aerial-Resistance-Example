@@ -1,16 +1,14 @@
-using Framework_Module.Configs.Ai;
-using Framework_Module.Interfaces;
-using UnityEngine.PlayerLoop;
+using Framework_Module.Definitions;
 
 namespace Framework_Module.Interfaces
 {
     /// <summary>
     /// Interface for movement-specific AI behaviors executed during a pattern.
     /// </summary>
-
-    public interface IMovementBehavior : IBehavior
+    
+    public interface IMovementBehavior : IAiBehavior<IVehicle>
     {
-        public int CompletedCycles { get; }
-        public void Reset(AiMovementBehaviorConfig data);
+        public delegate void CompletedMovementCycle();
+        public event CompletedMovementCycle OnCompletedMovementCycle;
     }
 }

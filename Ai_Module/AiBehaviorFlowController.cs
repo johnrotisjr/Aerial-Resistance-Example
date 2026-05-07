@@ -1,7 +1,11 @@
 using System;
-using Framework_Module.Configs.Ai;
+using System.Collections.Generic;
 using Framework_Module.Definitions;
+using Framework_Module.Definitions.BehaviorGroup;
 using Framework_Module.Enums;
+using Framework_Module.GameData;
+using Framework_Module.GameData.Ai;
+using Framework_Module.GameData.TransitionCondition;
 using Framework_Module.Interfaces;
 using Framework_Module.Service;
 using UnityEngine;
@@ -15,47 +19,64 @@ namespace Ai_Module
 
     public class AiBehaviorFlowController : IDebugInfo
     {
-        private enum AiDataType
+        [Flags]
+        public enum AiDataType
         {
-            Phase,
-            Routine,
-            PatternPair
+            Phase = 1 << 0,
+            Routine= 1 << 1,
+            BehaviorGroup= 1 << 2
         }
         
         private readonly AiBehaviorSequenceConfig sequenceConfig;
-        private readonly AiBehaviorExecutor behaviorExecutor;
 
         private int phaseIndex;
         private int routineIndex;
-        private int patternIndex;
-
-        private float phaseExpiration;
-        private float routineExpiration;
-        private float patternExpiration;
-
-        private int routinePatternsCycles;
-        private int phaseRoutinesCycles;
+        private int behaviorGroupIndex;
         
         private AiPhaseDefinition CurrentPhaseDefinition => sequenceConfig.AiPhases[phaseIndex];
-        private AiRoutineDefinition CurrentRoutineDefinition => CurrentPhaseDefinition.AiPhaseConfig.Routines[routineIndex];
-        public AiPatternPairDefinition CurrentPatternDefinition => CurrentRoutineDefinition.AiRoutineConfig.PatternPairs[patternIndex];
         
+        private AiRoutineDefinition CurrentRoutineDefinition => CurrentPhaseDefinition.AiPhaseConfig.Routines[routineIndex];
+
+        public AiBehaviorGroupDefinition CurrentBehaviorGroupDefinition =>
+            CurrentRoutineDefinition.AiRoutineConfig.AiBehaviorGroups.Count != 0
+                ? CurrentRoutineDefinition.AiRoutineConfig.AiBehaviorGroups[behaviorGroupIndex]
+                : null;
+        
+        public IReadOnlyList<IndependentAttackBehaviorDefinition> IndependentAttackBehaviorDefinitions => CurrentRoutineDefinition.AiRoutineConfig.IndependentAttackBehaviors;
+
         private readonly IPlayerController playerController;
         private readonly IVehicleController aiVehicleController;
+        private readonly AiBehaviorExecutor behaviorExecutor;
+        
+        private AiTransitionCondition phaseTransition = null;
+        private AiTransitionCondition routineTransition = null;
+        private AiTransitionCondition behaviorGroupTransition = null;
 
         public AiBehaviorFlowController(AiBehaviorSequenceConfig behaviorSequenceConfig, IVehicleController aiController, AiBehaviorExecutor aiBehaviorExecutor)
         {
             sequenceConfig = behaviorSequenceConfig ? behaviorSequenceConfig : throw new ArgumentNullException(nameof(behaviorSequenceConfig));
-            behaviorExecutor = aiBehaviorExecutor;
-            playerController = Services.Instance.Get<IPlayerController>();
+            playerController = Services.Get<IPlayerController>();
             aiVehicleController = aiController;
+            behaviorExecutor = aiBehaviorExecutor;
+            behaviorExecutor.OnCompletedMovementCycle += OnCompletedCycle;
             
             phaseIndex = 0;
             routineIndex = 0;
-            patternIndex = 0;
+            behaviorGroupIndex = 0;
 
             ResetAll();
         }
+
+        ~AiBehaviorFlowController()
+        {
+            behaviorExecutor.OnCompletedMovementCycle -= OnCompletedCycle;
+        }
+        
+        private void OnCompletedCycle()
+        {
+            TryIncreaseCycle(behaviorGroupTransition);
+        }
+
 
         public void ResetAll()
         {
@@ -63,73 +84,51 @@ namespace Ai_Module
             ResetRoutine();
             ResetPattern();
         }
-
-        public bool Update()
+ 
+        public AiDataType Update()
         {
-            bool patternChanged = false;
+            AiDataType transitionMadeFlags = 0;
 
-            if (EvaluateCondition(AiDataType.Phase))
+            if (IsTransitionConditionMet(AiDataType.Phase) && TryAdvancePhase())
             {
-                patternChanged |= TryAdvancePhase();
+                transitionMadeFlags |=  AiDataType.Phase;
             }
 
-            if (EvaluateCondition(AiDataType.Routine))
+            if (IsTransitionConditionMet(AiDataType.Routine) && TryAdvanceRoutine())
             {
-                patternChanged |= TryAdvanceRoutine();
+                transitionMadeFlags |= AiDataType.Routine;
             }
 
-            if (EvaluateCondition(AiDataType.PatternPair))
+            if (IsTransitionConditionMet(AiDataType.BehaviorGroup) && TryAdvanceBehaviorGroup())
             {
-                patternChanged |= TryAdvancePattern();
+                transitionMadeFlags |= AiDataType.BehaviorGroup;
             }
 
-            return patternChanged;
+            return transitionMadeFlags;
         }
         
-        bool EvaluateCondition(AiDataType type)
+        bool IsTransitionConditionMet(AiDataType type)
         {
-            AiTransitionConditionDefinition definition;
-            float expiration;
-            int completedCycles = 0;
-            
+            AiTransitionCondition instance;
             switch (type)
             {
                 case AiDataType.Phase:
-                    definition = CurrentPhaseDefinition.ConditionDefinition;
-                    expiration = phaseExpiration;
-                    completedCycles = phaseRoutinesCycles;
+                    instance = phaseTransition;
                     break;
                 case AiDataType.Routine:
-                    definition = CurrentRoutineDefinition.ConditionDefinition;
-                    expiration = routineExpiration;
-                    completedCycles = routinePatternsCycles;
+                    instance = routineTransition;
                     break;
-                case AiDataType.PatternPair:
-                    definition = CurrentPatternDefinition.ConditionDefinition;
-                    expiration = patternExpiration;
-                    completedCycles = behaviorExecutor.MovementCycles;
+                case AiDataType.BehaviorGroup:
+                    instance = behaviorGroupTransition;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
- 
-            switch (definition.Type)
-            {
-                case AiTransitionType.Time:
-                    return Time.time > expiration;
-                case AiTransitionType.HealthPercentBelow:
-                    var aiHealth = aiVehicleController.ControlledVehicle.Health;
-                    var targetHealth = definition.TransitionValue * .01 * aiVehicleController.ControlledVehicle.MaxHealth;
-                    return aiHealth < targetHealth;
-                case AiTransitionType.PlayerInRange:
-                    return Vector2.Distance(aiVehicleController.ControlledVehicle.Position, playerController.ControlledVehicle.Position) < definition.TransitionValue;
-                case AiTransitionType.Custom:
-                    return definition.TransitionCondition?.Invoke() ?? false;
-                case AiTransitionType.CycleComplete:
-                    return definition.TransitionValue <= completedCycles;
-                default:
-                    return false;
-            }
+
+            if (instance?.TransitionConditionFunc != null)
+                return instance.TransitionConditionFunc.Invoke();
+            
+            return instance?.ConditionMet ?? false;
         }
 
         private bool TryAdvancePhase()
@@ -140,10 +139,12 @@ namespace Ai_Module
             }
             else if (sequenceConfig.IsLooped)
             {
-                phaseIndex = 0;   
+                phaseIndex = 0;
             }
             else
+            {
                 return false;
+            }
 
             ResetAll();
             return true;
@@ -151,70 +152,134 @@ namespace Ai_Module
 
         private bool TryAdvanceRoutine()
         {
+ 
             if (routineIndex + 1 < CurrentPhaseDefinition.AiPhaseConfig.Routines.Count)
             {
                 routineIndex++;   
             }
             else if (CurrentPhaseDefinition.AiPhaseConfig.IsLooped)
             {
-                phaseRoutinesCycles++;
                 routineIndex = 0;
+                TryIncreaseCycle(phaseTransition);
             }
             else
+            {
+                TryIncreaseCycle(phaseTransition, 1);
                 return false;
+            }
  
             ResetRoutine();
             ResetPattern();
             return true;
         }
 
-        private bool TryAdvancePattern()
+        private bool TryAdvanceBehaviorGroup()
         {
-            if (patternIndex + 1 < CurrentRoutineDefinition.AiRoutineConfig.PatternPairs.Count)
-                patternIndex++;
+ 
+            if (behaviorGroupIndex + 1 < CurrentRoutineDefinition.AiRoutineConfig.AiBehaviorGroups.Count)
+                behaviorGroupIndex++;
             else if (CurrentRoutineDefinition.AiRoutineConfig.IsLooped)
             {
-                routinePatternsCycles++;
-                patternIndex = 0;
+                behaviorGroupIndex = 0;
+                TryIncreaseCycle(routineTransition);
             }
             else
+            {
+                TryIncreaseCycle(routineTransition, 1);
                 return false;
+            }
 
             ResetPattern();
             return true;
+        }
+        
+        private void TryIncreaseCycle(AiTransitionCondition condition, int setCount = -1)
+        {
+            if (condition?.TransitionType == AiTransitionType.CycleComplete)
+            {
+                var cycleCondition = condition.ConditionToType<CycleCompleteCondition>();
+                if(setCount == -1)
+                    cycleCondition.IncreaseCycles();
+                else
+                    cycleCondition.SetCycles(setCount);
+            }
+        }
+        
+        private void SetupCondition(AiTransitionCondition aiTransitionCondition)
+        {
+            if (aiTransitionCondition == null)
+                return;
+            
+            //aiTransitionCondition.Reset();
+            aiTransitionCondition.Init(playerController, aiVehicleController);
         }
 
         private void ResetPhase()
         {
             routineIndex = 0;
-            phaseRoutinesCycles = 0;
-            phaseExpiration = Time.time + CurrentPhaseDefinition.ConditionDefinition.TransitionValue;
+            phaseTransition = CreateNewRuntimeInstance(CurrentPhaseDefinition.TransitionConditionDefinition);
+            SetupCondition(phaseTransition);
         }
 
         private void ResetRoutine()
         {
-            patternIndex = 0;
-            routinePatternsCycles = 0;
-            routineExpiration = Time.time + CurrentRoutineDefinition.ConditionDefinition.TransitionValue;
+            behaviorGroupIndex = 0;
+            routineTransition = CreateNewRuntimeInstance(CurrentRoutineDefinition.TransitionConditionDefinition);
+            SetupCondition(routineTransition);
         }
 
         private void ResetPattern()
         {
-            patternExpiration = Time.time + CurrentPatternDefinition.ConditionDefinition.TransitionValue;
+            if(CurrentBehaviorGroupDefinition == null)
+                return;
+            behaviorGroupTransition = CreateNewRuntimeInstance(CurrentBehaviorGroupDefinition.TransitionConditionDefinition);
+            SetupCondition(behaviorGroupTransition);
         }
-        
+
+        private AiTransitionCondition CreateNewRuntimeInstance(AiTransitionConditionDefinition def)
+        {
+            if (def is TimeConditionDefinition tc)
+            {
+                return new TimeCondition(tc);
+            }
+            
+            if(def is HealthPercentBelowConditionDefinition hpc)
+            {
+                return new HealthPercentBelowCondition(hpc);
+            }
+            
+            if(def is CycleCompleteConditionDefinition ccc)
+            {
+                return new CycleCompleteCondition(ccc);
+            }
+            
+            if(def is PlayerInRangeConditionDefinition prc)
+            {
+                return new PlayerInRangeCondition(prc);
+            }
+            
+            if(def is PlayerRelativeLocationConditionDefinition plc)
+            {
+                return new PlayerRelativeLocationCondition(plc);
+            }
+            
+            return null;
+        }
+         
         public string GetDebugInfo()
         {
-            var pattern = CurrentPatternDefinition.AiPatternPairConfig;
-            var movement = pattern?.aiMovementBehaviorConfig?.name ?? "None";
-            var attack = pattern?.aiAttackBehaviorConfig?.name ?? "None";
+            var movement = behaviorExecutor.MovementBehavior?.GetType().Name ?? "None";
+            var attack = behaviorExecutor.AttackBehavior?.GetType().Name ?? "None";
 
             return
-                $"Tree: {sequenceConfig.name}\n" +
-                $"Phase {phaseIndex}: {CurrentPhaseDefinition.AiPhaseConfig?.name ?? "?"}\n" +
-                $"Routine {routineIndex}: {CurrentRoutineDefinition.AiRoutineConfig?.name ?? "?"}\n" +
-                $"Pattern {patternIndex}:" +
-                $" - Move: {movement}" +
+                "Tree:\n" +
+                $" - {sequenceConfig.name}\n" +
+                $"Phase {phaseIndex}:\n" +
+                $" - {CurrentPhaseDefinition.AiPhaseConfig.name ?? "?"}\n" +
+                $"Routine {routineIndex}:\n" +
+                $" - {CurrentRoutineDefinition.AiRoutineConfig.name ?? "?"}\n" +
+                $"Pattern {behaviorGroupIndex}:\n" +
+                $" - Move: {movement}\n" +
                 $" - Attack: {attack}";
         }
     }

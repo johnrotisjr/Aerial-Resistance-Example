@@ -42,11 +42,11 @@ namespace Framework_Module.Game_State
                 var sceneType = sceneName.SceneNameToType();
                 if (sceneType == SceneType.Gameplay)
                 {
-                    var gameData = Services.Instance.Get<IGameData>();
-                    var configDatabase = Services.Instance.Get<IConfigDatabase>();
+                    var gameData = Services.Get<IGameData>();
+                    var configDatabase = Services.Get<IConfigDatabase>();
                     gameData.TransientPlayerData.SetWeaponSelections(configDatabase.GetAllWeaponData().Where(data => data.CanBePurchased).ToArray());
                     gameData.TransientPlayerData.SetMissionSelection(0);
-                    gameData.TransientPlayerData.SetVehicleSelection(VehicleArchetype.F14);
+                    gameData.TransientPlayerData.SetVehicleSelection(configDatabase.GetAllVehicleDefinition()?[0].Guid);
                 }
                 await SceneDirector.Transition(sceneType);
                 GameStateManager.ChangeState(sceneName.SceneNameToStartingGameState());

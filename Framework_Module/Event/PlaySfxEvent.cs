@@ -6,12 +6,10 @@ namespace Framework_Module.Event
     public class PlaySfxEvent : IGameEvent
     {
         public readonly AudioSfxType Type;
-        public readonly float Volume;
-        
-        public PlaySfxEvent(AudioSfxType type, float volume = 1.0f)
+
+        public PlaySfxEvent(AudioSfxType type)
         {
             Type = type;
-            Volume = volume;
         }
     }
 }

@@ -19,41 +19,23 @@ namespace Framework_Module.Extensions
             );
         }
 
-        public static PrefabKey GetPrefabKey(this VehicleArchetype type)
+        public static Vector3 Half(this Vector3 vec)
         {
-            switch (type)
-            {
-                case VehicleArchetype.F14:
-                    return PrefabKey.F14;
-                case VehicleArchetype.F15:
-                    return PrefabKey.F15;
-                case VehicleArchetype.H10:
-                    return PrefabKey.H10;
-                case VehicleArchetype.T10:
-                    return PrefabKey.T10;
-                case VehicleArchetype.B10:
-                    return PrefabKey.B10;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
-            }
+            return new Vector3(vec.x * .5f, vec.y * .5f, vec.z * .5f);
         }
         
-        public static PrefabKey GetPrefabKey(this WeaponType type)
+        public static float Cross2d(this Vector2 a, Vector2 b) => a.x * b.y - a.y * b.x;
+
+        public static bool IsBetweenWedge(this Vector2 dir, Vector2 min, Vector2 max)
         {
-            switch (type)
-            {
-                case WeaponType.Bullet:
-                    return PrefabKey.Bullet;
-                case WeaponType.HomingMissile:
-                    return PrefabKey.HomingMissile;
-                case WeaponType.Slug:
-                    return PrefabKey.Slug;
-                case WeaponType.Bomb:
-                    return PrefabKey.Bomb;
-                case WeaponType.None:
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
-            }
+            float s = Cross2d(min, max);
+            float a = Cross2d(min, dir);
+            float b = Cross2d(dir, max);
+            
+            if (s >= 0f)// <= 180° wedge
+                return a >= -float.Epsilon && b >= -float.Epsilon;          
+            else// > 180° wedge
+                return !(a > float.Epsilon && b > float.Epsilon);           
         }
     }
 }

@@ -7,10 +7,17 @@ namespace Framework_Module.Enums
 
     public enum VehicleArchetype
     {
-        F14,
-        F15,
-        H10,
-        T10,
-        B10,
+        FighterJet = 0,
+        AttackJet = 1,
+        Bomber = 2,
+        AttackHelicopter = 3,
+        TransportHelicopter = 4,
+        Tank = 5,
+        Corvette = 6,
+        Destroyer = 7,
+        Turret = 8,
+        AircraftCarrier = 9,
+        Submarine = 10,
+        Battleship = 11,
     }
 }

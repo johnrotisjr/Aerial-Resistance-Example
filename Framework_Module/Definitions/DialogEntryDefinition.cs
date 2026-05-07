@@ -8,9 +8,8 @@ namespace Framework_Module.Definitions
     public struct DialogEntryDefinition
     {
         [SerializeField] private AvatarType avatarType;
-        public AvatarType AvatarType => avatarType;
-        
         [SerializeField] private string text;
+        public AvatarType AvatarType => avatarType;
         public string Text => text;
     }
 }

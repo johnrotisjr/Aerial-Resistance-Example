@@ -14,5 +14,6 @@ namespace Framework_Module.Enums
         Bomb,
         Slug,
         Bullet,
+        Laser
     }
 }

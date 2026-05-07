@@ -16,7 +16,8 @@ namespace Framework_Module.Core
             base.OnDestroy();
             for (var i = Coroutines.Count-1; i >= 0; i--)
             {
-                StopCoroutine(Coroutines[i]);
+                if(Coroutines[i] != null)
+                    StopCoroutine(Coroutines[i]);
                 Coroutines.Remove(Coroutines[i]);
             }
             Coroutines.Clear();

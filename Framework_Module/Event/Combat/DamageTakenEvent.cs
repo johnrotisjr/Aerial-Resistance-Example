@@ -3,7 +3,7 @@ using Framework_Module.Interfaces;
 namespace Framework_Module.Event.Combat
 {
     /// <summary>
-    /// Event triggered when an entity takes damage.
+    /// Event triggered when an World Object takes damage.
     /// Includes reference to the damaged Vehicle and amount of damage taken.
     /// </summary>
 

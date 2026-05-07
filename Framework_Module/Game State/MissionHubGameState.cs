@@ -45,10 +45,7 @@ namespace Framework_Module.Game_State
         
         private void OnPlaneSelected(PlaneSelectedEvent e)
         {
-            if (e.Data.Length <= 0)
-                return;
-            
-            gameData.TransientPlayerData.SetVehicleSelection(e.Data[0].VehicleArchetype);
+            gameData.TransientPlayerData.SetVehicleSelection(e.Data.Guid);
             manager.OpenScreen(ScreenType.Weapon);
         }
         

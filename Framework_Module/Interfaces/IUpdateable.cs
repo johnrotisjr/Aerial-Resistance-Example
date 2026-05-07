@@ -2,7 +2,7 @@ namespace Framework_Module.Interfaces
 {
     public interface IUpdateable
     {
-        public void Tick();
-        public void FixedTick();
+        public void Update();
+        public void FixedUpdate();
     }
 }

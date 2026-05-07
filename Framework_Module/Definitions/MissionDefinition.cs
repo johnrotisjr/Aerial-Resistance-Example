@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Framework_Module.GameData.Instructions;
 using UnityEngine;
 
 namespace Framework_Module.Definitions
@@ -7,6 +8,7 @@ namespace Framework_Module.Definitions
     [Serializable]
     public struct MissionDefinition
     {
+        [SerializeField] string displayName;
         [SerializeField] private SpawnVehicleInstruction[] spawnVehicleInstructions;
         [SerializeField] private SpawnPickupInstruction[] spawnPickupInstructions;
         [SerializeField] private SpawnVehicleInstruction bossSpawnVehicleInstruction;
@@ -14,11 +16,11 @@ namespace Framework_Module.Definitions
         [SerializeField] private ObjectiveDefinition[] primaryObjectivesData;
         [SerializeField] private ObjectiveDefinition[] secondaryObjectivesData;
         [SerializeField] private ObjectiveDefinition[] hiddenObjectivesData;
-        [SerializeField] string displayName;
+
         public string DisplayName => displayName;        
         public IReadOnlyCollection<SpawnVehicleInstruction> SpawnVehicleInstructions => spawnVehicleInstructions;
         public IReadOnlyCollection<SpawnPickupInstruction> SpawnPickupInstructions =>  spawnPickupInstructions;
-        public SpawnVehicleInstruction BossSpawnVehicleInstruction => bossSpawnVehicleInstruction;
+        public readonly SpawnVehicleInstruction BossSpawnVehicleInstruction => bossSpawnVehicleInstruction;
         
         public IReadOnlyCollection<ObjectiveDefinition> PrimaryObjectivesData => primaryObjectivesData;
         public IReadOnlyCollection<ObjectiveDefinition> SecondaryObjectivesData => secondaryObjectivesData;

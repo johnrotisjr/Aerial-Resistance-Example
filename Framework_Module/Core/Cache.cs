@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using Debug_Module;
+using Framework_Module.Interfaces;
 
 namespace Framework_Module.Core
 {
-    public class Cache<TKey, TValue> where TValue : class
+    public class Cache<TKey, TValue> : IClearable where TValue : class
     {
         private readonly Dictionary<TKey, TValue> cache = new();
 

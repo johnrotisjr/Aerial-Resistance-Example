@@ -11,6 +11,8 @@ namespace Framework_Module.Enums
         Bullet,
         HomingMissile,
         Slug,
-        Bomb
+        Bomb,
+        LaserSweep,
+        Thrust
     }
 }

@@ -1,5 +1,7 @@
+ 
 using Framework_Module.Definitions;
 using Framework_Module.Enums;
+using Framework_Module.GameData.Data;
 using UnityEngine;
 
 namespace Framework_Module.Interfaces
@@ -12,8 +14,8 @@ namespace Framework_Module.Interfaces
     public interface IConfigDatabase : IGameService
     {
         public WeaponDefinition[] GetAllWeaponData();
-        public VehicleDefinition[] GetAllVehicleDefinition();
-        public bool GetVehicleDefinition(VehicleArchetype archetype, out VehicleDefinition definition);
+        public VehicleData[] GetAllVehicleDefinition();
+        public bool GetVehicleData(string id, out VehicleData data);
         public MissionDefinition GetMissionDefinition(int index);
         public bool GetWeaponDefinition(WeaponType type, out WeaponDefinition definition);
         public bool GetPickupDefinition(PickupType type, out PickupDefinition definition);
@@ -25,6 +27,6 @@ namespace Framework_Module.Interfaces
         public Sprite GetAvatarSprite(AvatarType type);
         public bool GetLevelDefinition(int levelIndex, out LevelDefinition definition);
         public bool GetUpgradeDefinition(UpgradeType type, out UpgradeDefinition definition);
-        public DialogSequenceDefinition? GetDialogSequenceDefinition(int missionIndex);
+        public DialogTrackDefinition? GetDialogSequenceDefinition(int missionIndex, WorldStateType type);
     }
 }

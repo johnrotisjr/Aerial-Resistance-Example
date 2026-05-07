@@ -8,8 +8,8 @@ namespace Framework_Module.Definitions
     public struct AvatarDefinition
     {
         [SerializeField] private Sprite sprite;
-        public Sprite Sprite => sprite;
         [SerializeField] private AvatarType avatarType;
+        public Sprite Sprite => sprite;
         public AvatarType AvatarType => avatarType;
     }
 }

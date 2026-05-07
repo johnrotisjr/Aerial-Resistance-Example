@@ -14,11 +14,11 @@ namespace Framework_Module.Core
     /// </summary>
     public class GameObjectPooler : MonoBehaviour, IGameService
     {
-        private readonly Dictionary<PrefabKey, Pool> pool = new();
-        public bool IsRegistered(PrefabKey key) => pool.ContainsKey(key);
+        private readonly Dictionary<string, Pool> pool = new();
+        public bool IsRegistered(string key) => pool.ContainsKey(key);
         public int RegisteredCount => pool.Count;
         
-        public void Register(PrefabKey key, GameObject prefab, int defaultCapacity = 10, int maxSize = 100, 
+        public void Register(string key, GameObject prefab, int defaultCapacity = 10, int maxSize = 100, 
             Action<GameObject> onGet = null, Action<GameObject> onRelease = null, 
             Action<GameObject> onCreate = null)
         {
@@ -59,7 +59,7 @@ namespace Framework_Module.Core
             this.pool[key] = new Pool { ObjectPool = objectPool, Parent = container };
         }
         
-        public bool UnRegister(PrefabKey key)
+        public bool UnRegister(string key)
         {
             if (pool.ContainsKey(key))
             {
@@ -70,17 +70,22 @@ namespace Framework_Module.Core
             return pool.Remove(key);
         }
     
-        public T Get<T>(PrefabKey key) where T : Component
+        public T Get<T>(string key) where T : Component
+        {
+            return Get(key)?.GetComponent<T>();
+        }
+        
+        public GameObject Get(string key)
         {
             if (pool.TryGetValue(key, out var p))
             {
-                return p.ObjectPool.Get().GetComponent<T>();
+                return p.ObjectPool.Get();
             }
-            DebugLogger.Log($"Prefab {typeof(T)} not registered with the pooler.", LogCategory.Framework, LogLevel.Log);
+            DebugLogger.Log($"Prefab {key} not registered with the pooler.", LogCategory.Framework, LogLevel.Log);
             return default;
         }
     
-        public void Release(PrefabKey key, GameObject instance)
+        public void Release(string key, GameObject instance)
         {
             if (pool.TryGetValue(key, out var p))
             {

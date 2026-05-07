@@ -4,10 +4,9 @@ using Framework_Module.Enums;
 
 namespace Framework_Module.Interfaces
 {
-    public interface ITransientPlayerData
+    public interface ITransientPlayerData : IClearable
     {
-        public void Clear();
-        public VehicleArchetype? SelectedPlaneType { get; }
+        public string SelectedVehicleId { get; }
         public IReadOnlyList<WeaponDefinition> SelectedWeaponData { get; }
         public float FirePower { get; }
         public int Cash { get; }
@@ -17,7 +16,7 @@ namespace Framework_Module.Interfaces
         public void SetMissionSelection(int index);
         public void AddCash(int cash);
         public void AddFirepower(float increment);
-        public void SetVehicleSelection(VehicleArchetype selectedPlane);
+        public void SetVehicleSelection(string vehicleId);
         public void SetWeaponSelections(WeaponDefinition[] selectedWeapons);
     }
 }

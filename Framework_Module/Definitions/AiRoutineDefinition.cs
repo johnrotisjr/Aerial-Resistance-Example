@@ -1,7 +1,6 @@
 using System;
-using Framework_Module.Configs.Ai;
+using Framework_Module.GameData.Ai;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Framework_Module.Definitions
 {
@@ -10,18 +9,17 @@ namespace Framework_Module.Definitions
     /// </summary>
 
     [Serializable]
-    public struct AiRoutineDefinition
+    public class AiRoutineDefinition
     {
-        [FormerlySerializedAs("AIRoutineConfig")] [SerializeField] private AiRoutineConfig aiRoutineConfig;
-        [FormerlySerializedAs("ConditionDefinition")] [SerializeField] private AiTransitionConditionDefinition conditionDefinition;
+        [SerializeField] private AiRoutineConfig aiRoutineConfig;
+        [SerializeReference] private AiTransitionConditionDefinition transitionConditionDefinition;
         
         public AiRoutineConfig AiRoutineConfig => aiRoutineConfig;
-        public AiTransitionConditionDefinition ConditionDefinition => conditionDefinition;
-        
-        public AiRoutineDefinition(AiRoutineConfig routineConfig, AiTransitionConditionDefinition conditionDefinition)
+        public AiTransitionConditionDefinition TransitionConditionDefinition => transitionConditionDefinition;
+        public AiRoutineDefinition(AiRoutineConfig aiRoutineConfig, AiTransitionConditionDefinition transitionConditionDefinition)
         {
-            this.aiRoutineConfig = routineConfig;
-            this.conditionDefinition = conditionDefinition;
+            this.aiRoutineConfig = aiRoutineConfig;
+            this.transitionConditionDefinition = transitionConditionDefinition;
         }
     }
 }

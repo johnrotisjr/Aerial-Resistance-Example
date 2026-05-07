@@ -5,17 +5,19 @@ using UnityEngine;
 namespace Framework_Module.Definitions
 {
     [Serializable]
-    public struct WeaponDefinition
+    public class WeaponDefinition
     {
         [SerializeField] private WeaponType type;
         [SerializeField] private Sprite icon;
         [SerializeField] private float damage;
         [SerializeField] private float speed;
+        [SerializeField] private bool destroyOnCollision;
         [SerializeField] private bool canBePurchased;
         [SerializeField] private GameObject prefab;
         [SerializeField] string displayName;
         public string DisplayName => displayName;        
         public WeaponType Type => type;
+        public bool DestroyOnCollision => destroyOnCollision;
         public Sprite Icon => icon;
         public float Damage => damage;
         public float Speed => speed;
@@ -28,6 +30,7 @@ namespace Framework_Module.Definitions
             Sprite icon,
             float damage,
             float speed,
+            bool destroyOnCollision,
             bool canBePurchased,
             GameObject prefab)
         {
@@ -36,6 +39,7 @@ namespace Framework_Module.Definitions
             this.icon = icon;
             this.damage = damage;
             this.speed = speed;
+            this.destroyOnCollision = destroyOnCollision;
             this.canBePurchased = canBePurchased;
             this.prefab = prefab;
         }

@@ -10,7 +10,7 @@ namespace Framework_Module.Interfaces
         public IReadOnlyCollection<bool> CompletedLevels { get; }
         public void CompleteLevel(int levelId);
         public bool IsLevelCompleted(int index);
-        public int UpdateVehicleUpgradeData(VehicleArchetype vehicleArchetype, UpgradeType upgradeType, int increment);
-        public IUpgradeData GetVehicleUpgrades(VehicleArchetype archetype);
+        public int UpdateVehicleUpgradeData(string id, UpgradeType upgradeType, int increment);
+        public IUpgradeData GetVehicleUpgrades(string id);
     }
 }

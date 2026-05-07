@@ -1,5 +1,5 @@
 using System;
-using Framework_Module.Configs.Ai;
+using Framework_Module.GameData.Ai;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -13,15 +13,15 @@ namespace Framework_Module.Definitions
     public struct AiPhaseDefinition
     {
         [SerializeField] private AiPhaseConfig aiPhaseConfig;
-        [FormerlySerializedAs("conditionData")] [SerializeField] private AiTransitionConditionDefinition conditionDefinition;
+        [SerializeReference] private AiTransitionConditionDefinition transitionConditionDefinition;
 
         public AiPhaseConfig AiPhaseConfig => aiPhaseConfig;
-        public AiTransitionConditionDefinition ConditionDefinition => conditionDefinition;
+        public AiTransitionConditionDefinition TransitionConditionDefinition => transitionConditionDefinition;
         
-        public AiPhaseDefinition(AiPhaseConfig phaseConfig, AiTransitionConditionDefinition conditionDefinition)
+        public AiPhaseDefinition(AiPhaseConfig aiPhaseConfig, AiTransitionConditionDefinition transitionConditionDefinition)
         {
-            this.aiPhaseConfig = phaseConfig;
-            this.conditionDefinition = conditionDefinition;
+            this.aiPhaseConfig = aiPhaseConfig;
+            this.transitionConditionDefinition = transitionConditionDefinition;
         }
     }
 }

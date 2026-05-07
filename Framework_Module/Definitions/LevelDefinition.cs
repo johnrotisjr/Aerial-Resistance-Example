@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Framework_Module.Definitions
@@ -6,11 +7,10 @@ namespace Framework_Module.Definitions
     [Serializable]
     public struct LevelDefinition
     {
-        
         [SerializeField] private int[] unlockRequirementsIndices;
         [SerializeField] string displayName;
         public string DisplayName => displayName;        
-        public int[] UnlockRequirementsIndices => unlockRequirementsIndices;
+        public IReadOnlyCollection<int> UnlockRequirementsIndices => unlockRequirementsIndices;
 
         public LevelDefinition(string displayName, int[] unlockRequirementsIndices)
         {

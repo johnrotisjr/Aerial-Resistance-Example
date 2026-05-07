@@ -17,7 +17,7 @@ namespace Framework_Module.Core
         {
             DontDestroyOnLoad(gameObject);
             Services.Instance.InitializeServices();
-            Services.Instance.Get<EventBus>().Publish(new ServiceInitCompleteEvent());
+            Services.Get<EventBus>().Publish(new ServiceInitCompleteEvent());
         }
 
         private void OnDestroy()

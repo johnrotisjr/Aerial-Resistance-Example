@@ -13,5 +13,7 @@ namespace Framework_Module.Enums
         Spray,
         Radial,
         Sniper,
+        Thrust,
+        LaserSweep
     }
 }
